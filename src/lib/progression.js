@@ -19,15 +19,33 @@ export function exerciseHistory(workouts, exerciseId, { excludeDate } = {}) {
 export function sessionScore(sets) {
   let best = 0;
   let topKg = 0;
+  let totalReps = 0;
+  let repsAtTop = 0;
   for (const s of sets) {
     const kg = Number(s.kg) || 0;
     const reps = Number(s.reps) || 0;
     if (!kg || !reps) continue;
     const e1rm = kg * (1 + reps / 30);
     if (e1rm > best) best = e1rm;
-    if (kg > topKg) topKg = kg;
+    if (kg > topKg) {
+      topKg = kg;
+      repsAtTop = 0;
+    }
+    if (kg === topKg) repsAtTop += reps;
+    totalReps += reps;
   }
-  return { e1rm: Math.round(best * 10) / 10, topKg };
+  return { e1rm: Math.round(best * 10) / 10, topKg, totalReps, repsAtTop };
+}
+
+/*
+  Una sessione è un progresso rispetto alla precedente se il carico massimo è salito
+  oppure, a parità di carico, se sono aumentate le ripetizioni fatte a quel carico.
+  Così salire di peso e ripartire dal minimo del range non viene letto come stallo.
+*/
+export function improved(current, previous) {
+  if (current.topKg > previous.topKg) return true;
+  if (current.topKg === previous.topKg && current.repsAtTop > previous.repsAtTop) return true;
+  return false;
 }
 
 /*
@@ -74,17 +92,17 @@ export function suggestNext(exercise, history) {
 }
 
 /*
-  Plateau: nelle ultime N sessioni (N = plateau_weeks + 1, cioè 3) l'e1RM non è mai migliorato
-  rispetto alla sessione precedente. Le sessioni di deload non contano.
+  Plateau: nelle ultime N sessioni (N = plateau_weeks + 1, cioè 3) nessuna ha migliorato
+  la precedente (vedi `improved`). Le sessioni di deload non contano.
 */
 export function detectPlateau(history, plateauWeeks = PROGRAM.progression.plateauWeeks) {
   const clean = history.filter(h => !h.deload);
   const needed = plateauWeeks + 1;
   if (clean.length < needed) return { plateau: false, stalledSessions: 0 };
-  const scores = clean.slice(0, needed).map(h => sessionScore(h.sets).e1rm);
+  const scores = clean.slice(0, needed).map(h => sessionScore(h.sets));
   let stalled = 0;
   for (let i = 0; i < scores.length - 1; i++) {
-    if (scores[i] <= scores[i + 1]) stalled++;
+    if (!improved(scores[i], scores[i + 1])) stalled++;
     else break;
   }
   return { plateau: stalled >= plateauWeeks, stalledSessions: stalled };
@@ -103,7 +121,7 @@ export function deloadStatus({ programStart, deloads, now = new Date() }) {
     weekStart.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7) + (w - 1) * 7 + 7);
     sinceDate = weekStart;
   }
-  const weeks = Math.floor(daysBetween(sinceDate, now) / 7);
+  const weeks = Math.max(0, Math.floor(daysBetween(sinceDate, now) / 7));
   return {
     inDeload,
     weeksSince: weeks,

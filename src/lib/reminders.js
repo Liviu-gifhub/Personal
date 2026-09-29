@@ -128,7 +128,16 @@ export function activeReminders(list, { minutesNow, fired = [], dismissed = [], 
 }
 
 export function upcomingReminders(list, { minutesNow, limit = 3 }) {
-  return list.filter(r => r.minutes > minutesNow && !(r.doneWhen && r.doneWhen())).slice(0, limit);
+  const seenQuiet = new Set();
+  return list
+    .filter(r => r.minutes > minutesNow && !(r.doneWhen && r.doneWhen()))
+    .filter(r => {
+      if (!r.quiet) return true;
+      if (seenQuiet.has(r.kind)) return false;
+      seenQuiet.add(r.kind);
+      return true;
+    })
+    .slice(0, limit);
 }
 
 export function notificationsSupported() {

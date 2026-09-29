@@ -63,7 +63,7 @@ export default function Progress({ state, actions, now }) {
   };
 
   return (
-    <div className="page progress">
+    <div className="page progress-screen">
       <header className="page-header">
         <span className="eyebrow">Progressi</span>
         <h1>Peso e costanza</h1>
