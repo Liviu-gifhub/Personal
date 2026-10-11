@@ -1,0 +1,119 @@
+.routine__views {
+  width: 100%;
+}
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.timeline__item {
+  display: grid;
+  grid-template-columns: 52px 28px 1fr;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+}
+
+.timeline__time {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding-top: 10px;
+  font: var(--text-footnote);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.timeline__end {
+  font-weight: 400;
+  color: var(--text-tertiary);
+}
+
+.timeline__rail {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.timeline__rail::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: calc(-1 * var(--space-3));
+  width: 2px;
+  background: var(--separator);
+  opacity: 0.5;
+}
+
+.timeline__item:last-child .timeline__rail::before {
+  bottom: auto;
+  height: 14px;
+}
+
+.timeline__dot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-top: 6px;
+  border-radius: 50%;
+  color: var(--kind-color);
+  background: var(--background);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--kind-color) 45%, transparent);
+}
+
+.timeline__item--current .timeline__dot {
+  background: var(--kind-color);
+  color: #fff;
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--kind-color) 20%, transparent);
+}
+
+.timeline__item--past .timeline__dot {
+  opacity: 0.5;
+}
+
+.timeline__item--past .timeline__card {
+  opacity: 0.65;
+}
+
+.timeline__card {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  transition: opacity var(--dur-base) ease;
+}
+
+.timeline__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.timeline__title {
+  font: var(--text-body);
+  font-weight: 600;
+}
+
+.timeline__check {
+  border-top: 1px solid var(--separator);
+  padding-top: var(--space-1);
+}
+
+.timeline__check .spring-check {
+  min-height: 36px;
+}
+
+.timeline__prep {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}

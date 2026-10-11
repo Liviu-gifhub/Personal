@@ -1,0 +1,24 @@
+{
+  "name": "liviu-app",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "App personale di self improvement per Liviu: routine, nutrizione, allenamento, progressi.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@hugeicons/core-free-icons": "^1.0.0",
+    "motion": "^12.0.0",
+    "ogl": "^1.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-icons": "^5.4.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.0.0"
+  }
+}

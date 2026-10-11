@@ -1,0 +1,64 @@
+.water {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.water__top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.water__value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  letter-spacing: -0.03em;
+}
+
+.water__unit {
+  font: var(--text-title-3);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.water--sm .water__unit {
+  font: var(--text-subheadline);
+  font-weight: 600;
+}
+
+.water__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.water__target {
+  font: var(--text-footnote);
+  color: var(--text-secondary);
+}
+
+.water__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.water__add {
+  flex: 1;
+  background: color-mix(in srgb, var(--teal) 18%, transparent);
+  color: var(--teal);
+}
+
+.water--done .water__add {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.water__half {
+  font: var(--text-footnote);
+  font-weight: 700;
+}

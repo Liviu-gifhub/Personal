@@ -1,0 +1,66 @@
+.settings__back {
+  align-self: flex-start;
+  margin-left: calc(-1 * var(--space-2));
+  margin-bottom: var(--space-2);
+}
+
+.settings__message {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-secondary);
+  font: var(--text-subheadline);
+}
+
+.settings__message span {
+  flex: 1;
+}
+
+.toggle {
+  flex: none;
+  width: 51px;
+  height: 31px;
+  border-radius: 999px;
+  border: 0;
+  padding: 2px;
+  background: var(--surface-elevated);
+  cursor: pointer;
+  transition: background-color var(--dur-base) ease;
+  position: relative;
+}
+
+.toggle--on {
+  background: var(--success);
+}
+
+.toggle:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.toggle__knob {
+  display: block;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+
+.toggle--on .toggle__knob {
+  transform: translateX(20px);
+}
+
+.settings__danger {
+  gap: var(--space-3);
+}
+
+.settings__reset {
+  width: 100%;
+}
+
+.settings code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
