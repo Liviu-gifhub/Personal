@@ -15,8 +15,9 @@ export default function TrendChart({
   ariaLabel = 'Andamento'
 }) {
   const data = useMemo(() => points.filter(p => p && Number.isFinite(p.value)), [points]);
+  const hasSignal = data.some(d => d.value !== 0);
 
-  if (data.length < 2) {
+  if (data.length < 2 || !hasSignal) {
     return (
       <div className="chart chart--empty" style={{ height }}>
         <span className="footnote">{emptyText}</span>
