@@ -2,6 +2,23 @@
   gap: var(--space-3);
 }
 
+.today__focus-actions {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: var(--space-2);
+}
+
+.today__deep-focus {
+  width: 100%;
+}
+
+.today__board-btn {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+  gap: 8px;
+}
+
 .today__settings {
   background: var(--surface);
   color: var(--text-secondary);

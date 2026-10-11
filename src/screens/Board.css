@@ -1,0 +1,84 @@
+.board__back {
+  align-self: flex-start;
+  margin-left: calc(-1 * var(--space-2));
+  margin-bottom: var(--space-2);
+}
+
+.board__composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.board__columns {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.board__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.board__empty {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  text-align: center;
+}
+
+.board__card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--separator);
+}
+
+.board__card--done .board__text {
+  text-decoration: line-through;
+  color: var(--text-tertiary);
+}
+
+.board__check {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--separator);
+  background: transparent;
+  color: transparent;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.board__check--on {
+  background: var(--success);
+  border-color: var(--success);
+  color: #fff;
+}
+
+.board__text {
+  margin: 0;
+  font: var(--text-body);
+  align-self: center;
+}
+
+.board__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+@media (min-width: 720px) {
+  .board__columns {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    align-items: start;
+  }
+}

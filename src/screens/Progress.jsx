@@ -1,14 +1,16 @@
 import { useMemo, useState } from 'react';
 import HoldButton from '../components/reactbits/HoldButton.jsx';
 import SpecularButton from '../components/reactbits/SpecularButton.jsx';
+import ConsistencyCalendar from '../components/ui/ConsistencyCalendar.jsx';
 import Icon from '../components/ui/Icon.jsx';
 import Sheet from '../components/ui/Sheet.jsx';
+import TrendChart from '../components/ui/TrendChart.jsx';
 import WeightChart from '../components/ui/WeightChart.jsx';
-import { PROFILE, DAY_SHORT } from '../data/profile.js';
-import { PATTERNS } from '../data/program.js';
+import { PROFILE } from '../data/profile.js';
+import { getSessionForDay } from '../data/program.js';
 import { computeStreak, lastNDays } from '../lib/checklist.js';
-import { fmtKg, sessionScore } from '../lib/progression.js';
-import { dateKey, formatDateShort, parseDateKey, weekKey } from '../lib/time.js';
+import { fmtKg, sessionScore, workoutVolume } from '../lib/progression.js';
+import { addDays, dateKey, dayKeyOf, formatDateShort, parseDateKey, weekKey } from '../lib/time.js';
 import './Progress.css';
 
 export default function Progress({ state, actions, now }) {
@@ -26,27 +28,71 @@ export default function Progress({ state, actions, now }) {
   const weighedThisWeek = weights.some(w => weekKey(parseDateKey(w.date)) === thisWeek && w.date !== state.createdAt);
 
   const streak = computeStreak(state, now);
-  const days = lastNDays(state, 14, now);
+  const days = lastNDays(state, 28, now);
 
   const completedWorkouts = Object.entries(state.workouts).filter(([, w]) => w.completedAt);
   const workoutsThisWeek = completedWorkouts.filter(([d]) => weekKey(parseDateKey(d)) === thisWeek).length;
 
-  const bestByPattern = useMemo(() => {
+  const completionSeries = useMemo(
+    () =>
+      days.map(d => ({
+        label: formatDateShort(parseDateKey(d.key)),
+        value: Math.round(d.ratio * 100)
+      })),
+    [days]
+  );
+
+  const waterSeries = useMemo(
+    () =>
+      days.map(d => ({
+        label: formatDateShort(parseDateKey(d.key)),
+        value: Math.round((d.water / 1000) * 100) / 100
+      })),
+    [days]
+  );
+
+  const volumeSeries = useMemo(() => {
     const out = [];
-    for (const [key, p] of Object.entries(PATTERNS)) {
-      let best = null;
-      for (const [date, w] of Object.entries(state.workouts)) {
-        for (const [exId, ex] of Object.entries(w.exercises || {})) {
-          if (!exId.startsWith(`${key}:`)) continue;
-          const score = sessionScore(ex.sets || []);
-          if (score.e1rm > 0 && (!best || score.e1rm > best.e1rm)) {
-            best = { ...score, date, variation: p.variations[Number(exId.split(':')[1])] };
-          }
-        }
-      }
-      out.push({ key, label: p.label, best });
+    for (let i = 27; i >= 0; i--) {
+      const date = addDays(now, -i);
+      const key = dateKey(date);
+      const w = state.workouts[key];
+      out.push({
+        label: formatDateShort(date),
+        value: w?.completedAt ? Math.round(workoutVolume(w)) : 0
+      });
     }
     return out;
+  }, [state.workouts, now]);
+
+  const weeklyWorkouts = useMemo(() => {
+    const map = new Map();
+    for (let i = 11; i >= 0; i--) {
+      const d = addDays(now, -i * 7);
+      const wk = weekKey(d);
+      map.set(wk, { label: wk.replace(/^\d+-W/, 'S'), value: 0 });
+    }
+    for (const [d] of completedWorkouts) {
+      const wk = weekKey(parseDateKey(d));
+      if (map.has(wk)) map.get(wk).value += 1;
+    }
+    return [...map.values()];
+  }, [completedWorkouts, now]);
+
+  const topLifts = useMemo(() => {
+    const best = new Map();
+    for (const [date, w] of Object.entries(state.workouts)) {
+      for (const [exId, ex] of Object.entries(w.exercises || {})) {
+        const score = sessionScore(ex.sets || []);
+        if (score.e1rm <= 0) continue;
+        const name = exId.startsWith('acc:') ? exId.slice(4) : exId;
+        const prevBest = best.get(exId);
+        if (!prevBest || score.e1rm > prevBest.e1rm) {
+          best.set(exId, { ...score, date, name });
+        }
+      }
+    }
+    return [...best.values()].sort((a, b) => b.e1rm - a.e1rm).slice(0, 8);
   }, [state.workouts]);
 
   const openAdd = () => {
@@ -61,6 +107,8 @@ export default function Progress({ state, actions, now }) {
     actions.addWeight(dateInput, Math.round(kg * 10) / 10);
     setSheet(null);
   };
+
+  const todaySession = getSessionForDay(dayKeyOf(now));
 
   return (
     <div className="page progress-screen">
@@ -109,16 +157,77 @@ export default function Progress({ state, actions, now }) {
             {streak} {streak === 1 ? 'giorno' : 'giorni'} di fila
           </span>
         </div>
-        <div className="card">
-          <div className="dots" aria-label="Ultimi 14 giorni">
-            {days.map(d => (
-              <span key={d.key} className="dot-day" title={`${d.key}: ${Math.round(d.ratio * 100)}%`}>
-                <span className={`dot dot--${d.ratio >= 0.7 ? 'full' : d.ratio >= 0.3 ? 'half' : 'empty'}`} style={{ '--fill': d.ratio }} />
-                <span className="caption">{DAY_SHORT[d.dayKey][0]}</span>
-              </span>
-            ))}
+        <ConsistencyCalendar state={state} now={now} streak={streak} />
+      </section>
+
+      <section className="section">
+        <div className="section-header">
+          <h2>Andamento</h2>
+          <span className="meta">Ultimi 28 giorni</span>
+        </div>
+        <div className="stack progress-charts">
+          <div className="card">
+            <div className="spread">
+              <span className="row-title">Completamento giornata</span>
+              <span className="meta tabular">{completionSeries[completionSeries.length - 1]?.value ?? 0}%</span>
+            </div>
+            <TrendChart
+              points={completionSeries}
+              height={150}
+              color="var(--success)"
+              formatValue={v => `${v}%`}
+              emptyText="Completa qualche giornata per vedere l'andamento."
+              ariaLabel="Completamento giornaliero"
+            />
           </div>
-          <p className="footnote">Un giorno conta quando completi almeno il 70% della checklist (acqua inclusa).</p>
+          <div className="card">
+            <div className="spread">
+              <span className="row-title">Acqua</span>
+              <span className="meta tabular">{waterSeries[waterSeries.length - 1]?.value ?? 0} L</span>
+            </div>
+            <TrendChart
+              points={waterSeries}
+              height={150}
+              color="var(--teal)"
+              mode="bar"
+              formatValue={v => `${v} L`}
+              emptyText="Bevi e registra l'acqua per vedere il grafico."
+              ariaLabel="Andamento acqua"
+            />
+          </div>
+          <div className="card">
+            <div className="spread">
+              <span className="row-title">Volume allenamento</span>
+              <span className="meta">kg totali/giorno</span>
+            </div>
+            <TrendChart
+              points={volumeSeries}
+              height={150}
+              color="var(--error)"
+              mode="bar"
+              formatValue={v => `${v} kg`}
+              emptyText="Completa un allenamento per vedere il volume."
+              ariaLabel="Volume allenamento"
+            />
+          </div>
+          <div className="card">
+            <div className="spread">
+              <span className="row-title">Sessioni a settimana</span>
+              <span className="meta">
+                {workoutsThisWeek}/6 questa settimana
+                {todaySession ? ` · oggi ${todaySession.name}` : ''}
+              </span>
+            </div>
+            <TrendChart
+              points={weeklyWorkouts}
+              height={140}
+              color="var(--accent)"
+              mode="bar"
+              formatValue={v => `${v}`}
+              emptyText="Nessuna sessione ancora."
+              ariaLabel="Sessioni settimanali"
+            />
+          </div>
         </div>
       </section>
 
@@ -126,19 +235,28 @@ export default function Progress({ state, actions, now }) {
         <div className="section-header">
           <h2>Allenamento</h2>
           <span className="meta">
-            {workoutsThisWeek}/5 questa settimana · {completedWorkouts.length} totali
+            {workoutsThisWeek}/6 questa settimana · {completedWorkouts.length} totali
           </span>
         </div>
         <div className="list">
-          {bestByPattern.map(({ key, label, best }) => (
-            <div key={key} className="row">
-              <div className="row-body">
-                <span className="row-title">{label}</span>
-                <span className="row-subtitle">{best ? `${best.variation} · ${formatDateShort(parseDateKey(best.date))}` : 'Nessun dato ancora'}</span>
-              </div>
-              <span className="row-trailing tabular">{best ? `${fmtKg(best.topKg)} kg · e1RM ${Math.round(best.e1rm)}` : '–'}</span>
+          {topLifts.length === 0 ? (
+            <div className="empty">
+              <strong>Nessun carico ancora</strong>
+              <span>Registra le serie in Palestra per vedere i tuoi migliori esercizi.</span>
             </div>
-          ))}
+          ) : (
+            topLifts.map(lift => (
+              <div key={`${lift.name}-${lift.date}`} className="row">
+                <div className="row-body">
+                  <span className="row-title">{lift.name}</span>
+                  <span className="row-subtitle">{formatDateShort(parseDateKey(lift.date))}</span>
+                </div>
+                <span className="row-trailing tabular">
+                  {fmtKg(lift.topKg)} kg · e1RM {Math.round(lift.e1rm)}
+                </span>
+              </div>
+            ))
+          )}
         </div>
         {state.variationLog.length > 0 ? (
           <div className="stack">
@@ -150,9 +268,9 @@ export default function Progress({ state, actions, now }) {
                 .map((v, i) => (
                   <div key={`${v.date}-${i}`} className="row">
                     <div className="row-body">
-                      <span className="row-title">{PATTERNS[v.pattern].label}</span>
+                      <span className="row-title">{v.pattern}</span>
                       <span className="row-subtitle">
-                        {PATTERNS[v.pattern].variations[v.from]} → {PATTERNS[v.pattern].variations[v.to]} · {v.reason === 'plateau' ? 'plateau' : 'manuale'}
+                        {v.from} → {v.to} · {v.reason === 'plateau' ? 'plateau' : 'manuale'}
                       </span>
                     </div>
                     <span className="row-trailing">{formatDateShort(parseDateKey(v.date))}</span>

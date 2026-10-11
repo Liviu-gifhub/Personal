@@ -25,6 +25,8 @@ export const INITIAL_STATE = {
   /* firedReminders[dateKey] = [reminderId] */
   firedReminders: {},
   dismissedReminders: {},
+  /* todos: [{ id, text, column: 'todo'|'doing'|'done', done, createdAt }] */
+  todos: [],
   settings: {
     notifications: false,
     theme: 'auto',
@@ -57,7 +59,11 @@ export function StoreProvider({ children }) {
         weights: [{ date: today, kg: PROFILE.startWeightKg }]
       };
     }
-    return { ...loaded, programStart: loaded.programStart || loaded.createdAt || today };
+    return {
+      ...loaded,
+      programStart: loaded.programStart || loaded.createdAt || today,
+      todos: Array.isArray(loaded.todos) ? loaded.todos : []
+    };
   });
 
   const firstRender = useRef(true);
@@ -186,9 +192,50 @@ export function StoreProvider({ children }) {
       bumpOpenCount() {
         update(prev => ({ ...prev, settings: { ...prev.settings, openCount: (prev.settings.openCount || 0) + 1 } }));
       },
+      addTodo(text, column = 'todo') {
+        const value = String(text || '').trim();
+        if (!value) return;
+        update(prev => ({
+          ...prev,
+          todos: [
+            ...(prev.todos || []),
+            {
+              id: `todo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+              text: value,
+              column,
+              done: column === 'done',
+              createdAt: new Date().toISOString()
+            }
+          ]
+        }));
+      },
+      moveTodo(id, column) {
+        update(prev => ({
+          ...prev,
+          todos: (prev.todos || []).map(t => (t.id === id ? { ...t, column, done: column === 'done' ? true : t.done && column !== 'todo' ? t.done : false } : t))
+        }));
+      },
+      toggleTodoDone(id) {
+        update(prev => ({
+          ...prev,
+          todos: (prev.todos || []).map(t => {
+            if (t.id !== id) return t;
+            const done = !t.done;
+            return { ...t, done, column: done ? 'done' : t.column === 'done' ? 'todo' : t.column };
+          })
+        }));
+      },
+      removeTodo(id) {
+        update(prev => ({ ...prev, todos: (prev.todos || []).filter(t => t.id !== id) }));
+      },
       importState(next) {
         if (!next || typeof next !== 'object') return;
-        update(() => ({ ...INITIAL_STATE, ...next, settings: { ...INITIAL_STATE.settings, ...(next.settings || {}) } }));
+        update(() => ({
+          ...INITIAL_STATE,
+          ...next,
+          todos: Array.isArray(next.todos) ? next.todos : [],
+          settings: { ...INITIAL_STATE.settings, ...(next.settings || {}) }
+        }));
       },
       resetAll() {
         const today = dateKey();
