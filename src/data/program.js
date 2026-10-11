@@ -89,7 +89,7 @@ export const WEEK = [
   },
   {
     day: 'sun',
-    name: 'Casa · Core',
+    name: 'Casa',
     home: true,
     sessionMinutes: 20,
     exercises: [

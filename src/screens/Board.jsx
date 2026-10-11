@@ -32,7 +32,7 @@ export default function Board({ state, actions, setTab }) {
   return (
     <div className="page board-screen">
       <header className="page-header">
-        <button type="button" className="btn btn--plain settings__back" onClick={() => setTab('today')}>
+        <button type="button" className="btn btn--plain board__back" onClick={() => setTab('today')}>
           <Icon name="chevronLeft" size={18} /> Oggi
         </button>
         <span className="eyebrow">Board</span>

@@ -1,3 +1,9 @@
+.board__back {
+  align-self: flex-start;
+  margin-left: calc(-1 * var(--space-2));
+  margin-bottom: var(--space-2);
+}
+
 .board__composer {
   display: flex;
   flex-direction: column;

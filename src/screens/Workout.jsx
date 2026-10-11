@@ -60,9 +60,13 @@ export default function Workout({ state, actions, now, engine }) {
     <div className="page workout">
       <header className="page-header">
         <span className="eyebrow">{PROGRAM.name}</span>
-        <h1>{isRestToday ? 'Rest day' : `${session?.name ?? ''} · ${DAY_LABELS[dayKey]}`}</h1>
+        <h1>
+          {isRestToday && selectedDay === dayKey
+            ? 'Rest day'
+            : `${session?.name ?? ''} · ${DAY_LABELS[selectedDay]}`}
+        </h1>
         <p className="muted">
-          {isRestToday
+          {isRestToday && selectedDay === dayKey
             ? 'Sabato si recupera. Domenica: core a casa (~20 min).'
             : session?.home
               ? `Sessione casa ~${session.sessionMinutes || PROGRAM.homeMinutes} min.`
