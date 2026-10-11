@@ -3,20 +3,20 @@ import HoldButton from '../components/reactbits/HoldButton.jsx';
 import SpecularButton from '../components/reactbits/SpecularButton.jsx';
 import Icon from '../components/ui/Icon.jsx';
 import { DAY_LABELS, DAY_SHORT } from '../data/profile.js';
-import { PATTERNS, PROGRAM, SLOT_LABELS, WEEK, getSessionForDay, resolveExercise } from '../data/program.js';
+import { DAY_OFFSET, PATTERNS, PROGRAM, SLOT_LABELS, WEEK, getSessionForDay, resolveExercise } from '../data/program.js';
 import { applyDeload, deloadStatus, detectPlateau, exerciseHistory, fmtKg, sessionScore, suggestNext, workoutVolume } from '../lib/progression.js';
 import { addDays, dateKey, formatDateShort, parseDateKey, startOfWeek } from '../lib/time.js';
 import './Workout.css';
 
-const WEEK_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
+const TRAINING_DAYS = WEEK.map(d => d.day);
 
 export default function Workout({ state, actions, now, engine }) {
   const { today, dayKey } = engine;
-  const isRestToday = !WEEK_DAYS.includes(dayKey);
+  const isRestToday = dayKey === 'sat' || !TRAINING_DAYS.includes(dayKey);
   const [selectedDay, setSelectedDay] = useState(isRestToday ? 'mon' : dayKey);
 
   const weekStart = startOfWeek(now);
-  const dateFor = d => dateKey(addDays(weekStart, WEEK_DAYS.indexOf(d)));
+  const dateFor = d => dateKey(addDays(weekStart, DAY_OFFSET[d] ?? 0));
   const logDate = dateFor(selectedDay);
   const editable = logDate === today;
   const session = getSessionForDay(selectedDay);
@@ -62,7 +62,11 @@ export default function Workout({ state, actions, now, engine }) {
         <span className="eyebrow">{PROGRAM.name}</span>
         <h1>{isRestToday ? 'Rest day' : `${session?.name ?? ''} · ${DAY_LABELS[dayKey]}`}</h1>
         <p className="muted">
-          {isRestToday ? 'Sabato e domenica si recupera. Qui sotto la settimana.' : `Sessione ${PROGRAM.sessionMinutes} min · ore 19:30.`}
+          {isRestToday
+            ? 'Sabato si recupera. Domenica: core a casa (~20 min).'
+            : session?.home
+              ? `Sessione casa ~${session.sessionMinutes || PROGRAM.homeMinutes} min.`
+              : `Sessione ${PROGRAM.sessionMinutes} min · ore 19:30.`}
         </p>
       </header>
 

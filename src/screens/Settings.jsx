@@ -3,7 +3,7 @@ import HoldButton from '../components/reactbits/HoldButton.jsx';
 import Icon from '../components/ui/Icon.jsx';
 import { PROFILE } from '../data/profile.js';
 import { PROGRAM } from '../data/program.js';
-import { notificationsSupported, requestNotificationPermission } from '../lib/reminders.js';
+import { notificationsSupported, requestNotificationPermission, showAppNotification } from '../lib/reminders.js';
 import { STORAGE_KEY } from '../lib/store.jsx';
 import { dateKey, parseDateKey, formatDateShort } from '../lib/time.js';
 import './Settings.css';
@@ -28,14 +28,31 @@ export default function Settings({ state, actions, setTab }) {
     setPermission(result);
     if (result === 'granted') {
       actions.setSetting('notifications', true);
-      try {
-        new Notification('Promemoria attivi', { body: 'Ti avviserò per integratori, pasti, acqua, palestra e meal prep.', icon: '/icon-192.png' });
-      } catch {
-        /* alcune piattaforme richiedono un service worker */
-      }
+      const ok = await showAppNotification({
+        id: 'welcome-notifications',
+        title: 'Promemoria attivi',
+        body: 'Ti avviserò per integratori, pasti, acqua, palestra e meal prep.'
+      });
+      setMessage(ok ? 'Notifiche attive. Dovresti aver ricevuto un messaggio di prova.' : 'Permesso ok, ma il browser ha bloccato la notifica di prova. Prova ad aggiungere l’app alla Home.');
     } else {
       setMessage(result === 'unsupported' ? 'Questo browser non supporta le notifiche.' : 'Permesso negato: abilitalo dalle impostazioni del browser.');
     }
+  };
+
+  const sendTest = async () => {
+    const result = permission === 'granted' ? 'granted' : await requestNotificationPermission();
+    setPermission(result);
+    if (result !== 'granted') {
+      setMessage(result === 'unsupported' ? 'Notifiche non supportate.' : 'Serve il permesso notifiche.');
+      return;
+    }
+    if (!state.settings.notifications) actions.setSetting('notifications', true);
+    const ok = await showAppNotification({
+      id: `test-${Date.now()}`,
+      title: 'Prova notifica',
+      body: 'Se vedi questo, le notifiche funzionano.'
+    });
+    setMessage(ok ? 'Notifica di prova inviata.' : 'Invio fallito: riprova dopo aver installato l’app sulla Home.');
   };
 
   const exportData = () => {
@@ -113,8 +130,13 @@ export default function Settings({ state, actions, setTab }) {
             </button>
           </div>
         </div>
+        <div className="grid-2" style={{ marginTop: 12 }}>
+          <button type="button" className="btn" onClick={sendTest} disabled={permission === 'unsupported'}>
+            <Icon name="bell" size={16} /> Invia prova
+          </button>
+        </div>
         <p className="footnote">
-          Le notifiche arrivano finché l'app è aperta o installata sulla schermata Home. I promemoria in app funzionano sempre e spariscono quando spunti l'attività.
+          Le notifiche usano un service worker: funziona meglio se aggiungi l'app alla schermata Home e lasci il permesso attivo. I promemoria in app restano comunque sempre visibili e spariscono quando spunti l'attività.
         </p>
       </section>
 

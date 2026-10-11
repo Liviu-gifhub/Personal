@@ -31,6 +31,9 @@ export function buildChecklist(dayKey) {
     items.push({ id: 'skincare', minutes: t(15), title: 'Skincare', group: 'Giornata', kind: 'selfcare' });
     items.push({ id: 'study', minutes: t(7, 30), title: 'Studio / lettura', group: 'Giornata', kind: 'study' });
     items.push({ id: 'business', minutes: t(11), title: 'Business personale', group: 'Giornata', kind: 'business' });
+    if (dayKey === 'sun' && session) {
+      items.push({ id: 'gym', minutes: t(9, 0), title: `Casa · ${session.name} (~${session.sessionMinutes || 20} min)`, group: 'Mattina', kind: 'gym' });
+    }
     if (dayKey === 'sun') {
       for (const step of MEAL_PREP.steps) {
         items.push({ id: `prep-${step.id}`, minutes: t(16), title: step.text, group: 'Meal prep', kind: 'prep' });

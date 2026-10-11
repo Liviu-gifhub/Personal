@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { StoreProvider, useStore } from './lib/store.jsx';
 import { useNow } from './lib/time.js';
 import { useReminderEngine } from './lib/reminders.js';
+import { registerNotificationWorker } from './lib/notifications.js';
 import TabBar from './components/ui/TabBar.jsx';
 import Today from './screens/Today.jsx';
 import Routine from './screens/Routine.jsx';
@@ -9,6 +10,7 @@ import Nutrition from './screens/Nutrition.jsx';
 import Workout from './screens/Workout.jsx';
 import Progress from './screens/Progress.jsx';
 import Settings from './screens/Settings.jsx';
+import Board from './screens/Board.jsx';
 
 function Shell() {
   const { state, actions } = useStore();
@@ -22,6 +24,7 @@ function Shell() {
     if (counted.current) return;
     counted.current = true;
     actions.bumpOpenCount();
+    registerNotificationWorker();
   }, [actions]);
 
   useEffect(() => {
@@ -39,6 +42,7 @@ function Shell() {
   }, [state.settings.theme]);
 
   const screenProps = { state, actions, now, engine, setTab, openSeed };
+  const hideTabBar = tab === 'board' || tab === 'settings';
 
   return (
     <div className="app">
@@ -49,8 +53,9 @@ function Shell() {
         {tab === 'workout' && <Workout {...screenProps} />}
         {tab === 'progress' && <Progress {...screenProps} />}
         {tab === 'settings' && <Settings {...screenProps} />}
+        {tab === 'board' && <Board {...screenProps} />}
       </main>
-      <TabBar current={tab} onChange={setTab} />
+      {!hideTabBar ? <TabBar current={tab} onChange={setTab} /> : null}
     </div>
   );
 }

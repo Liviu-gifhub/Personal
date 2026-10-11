@@ -28,7 +28,10 @@ export const WEEKDAY_ROUTINE = [
 */
 export const WEEKEND_ROUTINE = [
   { id: 'wake', start: t(6, 30), end: t(7, 30), title: 'Sveglia + integratori', kind: 'supplements', icon: 'sun', checkable: true, detail: 'Colazione: porridge' },
-  { id: 'morning', start: t(7, 30), end: t(10, 30), title: 'Mattina libera / studio', kind: 'study', icon: 'pen', checkable: true, detail: 'Ripasso leggero o lettura' },
+  { id: 'morning', start: t(7, 30), end: t(9, 0), title: 'Mattina libera / studio', kind: 'study', icon: 'pen', checkable: true, detail: 'Ripasso leggero o lettura', onlyDays: ['sun'] },
+  { id: 'gym-home', start: t(9, 0), end: t(9, 20), title: 'Casa · Core', kind: 'gym', icon: 'dumbbell', checkable: true, onlyDays: ['sun'], detail: '~20 min: addome, plank, collo' },
+  { id: 'morning', start: t(7, 30), end: t(10, 30), title: 'Mattina libera / studio', kind: 'study', icon: 'pen', checkable: true, detail: 'Ripasso leggero o lettura', onlyDays: ['sat'] },
+  { id: 'morning-after', start: t(9, 20), end: t(10, 30), title: 'Studio / lettura', kind: 'study', icon: 'pen', onlyDays: ['sun'], detail: 'Continua dopo il core' },
   { id: 'snack', start: t(10, 30), end: t(11, 0), title: 'Spuntino', kind: 'meal', icon: 'meal', checkable: true, detail: 'Pane integrale + tacchino + frutto (~400 kcal)' },
   { id: 'business', start: t(11, 0), end: t(13, 0), title: 'Business personale', kind: 'business', icon: 'rocket', checkable: true, detail: 'Blocco lungo per i progetti' },
   { id: 'lunch', start: t(14, 0), end: t(14, 30), title: 'Pranzo', kind: 'meal', icon: 'meal', checkable: true, detail: 'Pasta integrale, pollo, verdure (~850 kcal)' },
@@ -36,7 +39,7 @@ export const WEEKEND_ROUTINE = [
   { id: 'mealprep', start: t(16, 0), end: t(18, 0), title: 'Meal prep settimanale', kind: 'mealprep', icon: 'chef', checkable: true, onlyDays: ['sun'], detail: '1 kg di pollo, riso, pasta, verdure al forno. Dividi in contenitori.' },
   { id: 'free', start: t(16, 0), end: t(19, 0), title: 'Tempo libero / recupero', kind: 'rest', icon: 'pause', onlyDays: ['sat'] },
   { id: 'dinner', start: t(19, 0), end: t(19, 30), title: 'Cena', kind: 'meal', icon: 'meal', checkable: true, detail: 'Riso + pollo/tonno, verdure, frutto (~550 kcal)' },
-  { id: 'evening', start: t(19, 30), end: t(21, 30), title: 'Serata libera', kind: 'rest', icon: 'moon', detail: 'Rest day: il recupero fa parte del percorso' },
+  { id: 'evening', start: t(19, 30), end: t(21, 30), title: 'Serata libera', kind: 'rest', icon: 'moon', detail: 'Sabato rest day; domenica recupero dopo core e meal prep' },
   { id: 'post-workout', start: t(21, 30), end: t(22, 0), title: 'Shake proteico + magnesio', kind: 'meal', icon: 'shake', checkable: true, detail: 'Whey, avena, banana, latte + magnesio bisglicinato' },
   { id: 'relax', start: t(22, 0), end: t(22, 30), title: 'Riposo', kind: 'rest', icon: 'moon', detail: 'Prepara il porridge per domani' },
   { id: 'sleep', start: t(22, 30), end: t(24, 0), title: 'Dormire', kind: 'bed', icon: 'bed' }

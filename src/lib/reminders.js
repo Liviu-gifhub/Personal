@@ -2,9 +2,12 @@ import { useEffect, useMemo, useRef } from 'react';
 import { MEALS, MEAL_PREP, SUPPLEMENTS, isMedicineDay } from '../data/nutrition.js';
 import { PROFILE } from '../data/profile.js';
 import { getSessionForDay } from '../data/program.js';
+import { notificationsSupported, requestNotificationPermission, showAppNotification } from './notifications.js';
 import { dateKey, dayKeyOf, minutesOfDay, weekKey } from './time.js';
 
 const t = (h, m = 0) => h * 60 + m;
+
+export { notificationsSupported, requestNotificationPermission, showAppNotification };
 
 /*
   Costruisce i promemoria della giornata. Alcuni sono condizionali allo stato
@@ -99,6 +102,20 @@ export function buildReminders({ dayKey, state, today }) {
         doneWhen: () => checks.gym
       });
     }
+  } else {
+    list.push({ id: 'skincare', minutes: t(15), kind: 'selfcare', title: 'Skincare', body: 'Cinque minuti per te.', doneWhen: () => checks.skincare });
+    list.push({ id: 'study', minutes: t(7, 30), kind: 'study', title: 'Studio / lettura', body: 'Ripasso leggero o lettura.', doneWhen: () => checks.study });
+    list.push({ id: 'business', minutes: t(11), kind: 'business', title: 'Business personale', body: 'Blocco lungo per i progetti.', doneWhen: () => checks.business });
+    if (dayKey === 'sun' && session) {
+      list.push({
+        id: 'gym',
+        minutes: t(9, 0),
+        kind: 'gym',
+        title: `Casa: ${session.name}`,
+        body: `Circa ${session.sessionMinutes || 20} min · core e collo.`,
+        doneWhen: () => checks.gym
+      });
+    }
   }
 
   list.push({ id: 'magnesium', minutes: t(21, 30), kind: 'supplements', title: 'Magnesio bisglicinato', body: 'Con lo shake post-gym.', doneWhen: () => checks.magnesium });
@@ -118,7 +135,7 @@ export function buildReminders({ dayKey, state, today }) {
 }
 
 /* Promemoria "attivi": passati da poco (<= windowMin), non completati, non chiusi. */
-export function activeReminders(list, { minutesNow, fired = [], dismissed = [], windowMin = 90 }) {
+export function activeReminders(list, { minutesNow, fired = [], dismissed = [], windowMin = 120 }) {
   return list.filter(r => {
     if (r.minutes > minutesNow || minutesNow - r.minutes > windowMin) return false;
     if (dismissed.includes(r.id)) return false;
@@ -140,40 +157,15 @@ export function upcomingReminders(list, { minutesNow, limit = 3 }) {
     .slice(0, limit);
 }
 
-export function notificationsSupported() {
-  return typeof window !== 'undefined' && 'Notification' in window;
-}
-
-export async function requestNotificationPermission() {
-  if (!notificationsSupported()) return 'unsupported';
-  try {
-    return await Notification.requestPermission();
-  } catch {
-    return 'denied';
-  }
-}
-
-function showNotification(reminder) {
-  if (!notificationsSupported() || Notification.permission !== 'granted') return;
-  try {
-    const n = new Notification(reminder.title, {
-      body: reminder.body,
-      tag: reminder.id,
-      icon: '/icon-192.png',
-      silent: Boolean(reminder.quiet)
-    });
-    n.onclick = () => {
-      window.focus();
-      n.close();
-    };
-  } catch {
-    /* alcune piattaforme richiedono un service worker */
-  }
+function msUntilMinutes(targetMinutes, now = new Date()) {
+  const current = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+  const diffMin = targetMinutes - current;
+  return Math.round(diffMin * 60 * 1000);
 }
 
 /*
-  Motore promemoria: ogni 30s controlla se un promemoria è scaduto negli ultimi 15 minuti,
-  non è ancora stato notificato oggi e non è già completato. Notifica via Notification API se attive.
+  Motore promemoria: schedula timeout precisi + controllo periodico.
+  Usa il service worker quando disponibile così le notifiche arrivano davvero.
 */
 export function useReminderEngine({ state, actions, now }) {
   const today = dateKey(now);
@@ -181,22 +173,59 @@ export function useReminderEngine({ state, actions, now }) {
   const minutesNow = minutesOfDay(now);
 
   const reminders = useMemo(() => buildReminders({ dayKey, state, today }), [dayKey, state, today]);
+  const firedRef = useRef(new Set());
 
-  const lastCheck = useRef(0);
   useEffect(() => {
-    const stamp = `${today}:${minutesNow}`;
-    if (lastCheck.current === stamp) return;
-    lastCheck.current = stamp;
+    firedRef.current = new Set(state.firedReminders[today] || []);
+  }, [state.firedReminders, today]);
 
-    const fired = state.firedReminders[today] || [];
-    for (const r of reminders) {
-      if (r.minutes > minutesNow || minutesNow - r.minutes > 15) continue;
-      if (fired.includes(r.id)) continue;
-      if (r.doneWhen && r.doneWhen()) continue;
-      actions.markReminderFired(today, r.id);
-      if (state.settings.notifications) showNotification(r);
+  const fireReminder = useRef(async reminder => {
+    if (firedRef.current.has(reminder.id)) return;
+    if (reminder.doneWhen && reminder.doneWhen()) return;
+    firedRef.current.add(reminder.id);
+    actions.markReminderFired(today, reminder.id);
+    if (state.settings.notifications) {
+      await showAppNotification(reminder);
     }
-  }, [reminders, minutesNow, today, state.firedReminders, state.settings.notifications, actions]);
+  });
+
+  useEffect(() => {
+    fireReminder.current = async reminder => {
+      if (firedRef.current.has(reminder.id)) return;
+      if (reminder.doneWhen && reminder.doneWhen()) return;
+      firedRef.current.add(reminder.id);
+      actions.markReminderFired(today, reminder.id);
+      if (state.settings.notifications) {
+        await showAppNotification(reminder);
+      }
+    };
+  }, [actions, today, state.settings.notifications]);
+
+  /* Catch-up: promemoria scaduti da poco non ancora notificati */
+  useEffect(() => {
+    for (const r of reminders) {
+      if (r.minutes > minutesNow || minutesNow - r.minutes > 45) continue;
+      if (firedRef.current.has(r.id)) continue;
+      if (r.doneWhen && r.doneWhen()) continue;
+      fireReminder.current(r);
+    }
+  }, [reminders, minutesNow]);
+
+  /* Timeout precisi per i prossimi promemoria della giornata */
+  useEffect(() => {
+    if (!state.settings.notifications) return undefined;
+    const timers = [];
+    const nowDate = new Date();
+    for (const r of reminders) {
+      if (firedRef.current.has(r.id)) continue;
+      if (r.doneWhen && r.doneWhen()) continue;
+      const delay = msUntilMinutes(r.minutes, nowDate);
+      if (delay < -60 * 1000 || delay > 18 * 60 * 60 * 1000) continue;
+      const id = setTimeout(() => fireReminder.current(r), Math.max(0, delay));
+      timers.push(id);
+    }
+    return () => timers.forEach(clearTimeout);
+  }, [reminders, state.settings.notifications, today]);
 
   const active = useMemo(
     () =>

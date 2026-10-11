@@ -70,3 +70,11 @@
 .progress__delete {
   width: 100%;
 }
+
+.progress-charts {
+  gap: var(--space-3);
+}
+
+.progress-charts .card {
+  gap: var(--space-2);
+}

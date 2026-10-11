@@ -3,7 +3,6 @@ import { daysBetween, parseDateKey, weekKey } from './time.js';
 
 /* Incremento consigliato per settimana (kg) in base al pattern (upper vs lower). */
 export function incrementFor(exercise) {
-  if (!exercise.isPattern) return 1;
   return exercise.lower ? 2.5 : 1;
 }
 

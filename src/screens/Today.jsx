@@ -1,7 +1,9 @@
-import { useMemo } from 'react';
-import { FiActivity, FiCoffee, FiDroplet, FiTrendingUp } from 'react-icons/fi';
+import { useMemo, useState } from 'react';
+import { FiActivity, FiCoffee, FiDroplet, FiEdit3, FiTarget, FiTrendingUp } from 'react-icons/fi';
 import GlassIcons from '../components/reactbits/GlassIcons.jsx';
+import SpecularButton from '../components/reactbits/SpecularButton.jsx';
 import CheckRow from '../components/ui/CheckRow.jsx';
+import FocusTimer from '../components/ui/FocusTimer.jsx';
 import Icon, { KIND_COLOR, KIND_ICON } from '../components/ui/Icon.jsx';
 import ReminderBanner from '../components/ui/ReminderBanner.jsx';
 import WaterCounter from '../components/ui/WaterCounter.jsx';
@@ -20,6 +22,7 @@ const BLOCK_CHECK = {
   business: 'business',
   'pre-workout': 'meal-pregym',
   gym: 'gym',
+  'gym-home': 'gym',
   'post-workout': 'meal-postgym',
   snack: 'meal-snack',
   dinner: 'meal-pregym',
@@ -28,6 +31,8 @@ const BLOCK_CHECK = {
 };
 
 export default function Today({ state, actions, now, engine, setTab, openSeed }) {
+  const [focusOpen, setFocusOpen] = useState(false);
+  const [deepLock, setDeepLock] = useState(false);
   const { today, dayKey, minutesNow } = engine;
   const checks = state.checks[today] || {};
   const water = state.water[today] || 0;
@@ -61,9 +66,11 @@ export default function Today({ state, actions, now, engine, setTab, openSeed })
 
   const quickActions = [
     { icon: <FiDroplet />, color: 'linear-gradient(hsl(199, 90%, 50%), hsl(190, 90%, 45%))', label: '+250 ml', onClick: () => actions.addWater(today, PROFILE.waterStepMl) },
+    { icon: <FiTarget />, color: 'blue', label: 'Focus', onClick: () => { setDeepLock(false); setFocusOpen(true); } },
+    { icon: <FiEdit3 />, color: 'purple', label: 'Board', onClick: () => setTab('board') },
     { icon: <FiActivity />, color: 'red', label: 'Palestra', onClick: () => setTab('workout') },
     { icon: <FiCoffee />, color: 'green', label: 'Pasti', onClick: () => setTab('nutrition') },
-    { icon: <FiTrendingUp />, color: 'blue', label: 'Peso', onClick: () => setTab('progress') }
+    { icon: <FiTrendingUp />, color: 'orange', label: 'Peso', onClick: () => setTab('progress') }
   ];
 
   return (
@@ -88,6 +95,38 @@ export default function Today({ state, actions, now, engine, setTab, openSeed })
         }}
         onDismiss={r => actions.dismissReminder(today, r.id)}
       />
+
+      <section className="section today__focus-actions">
+        <SpecularButton
+          size="md"
+          radius={16}
+          tint="#0a84ff"
+          tintOpacity={0.9}
+          textColor="#ffffff"
+          baseColor="#4a4a4f"
+          autoAnimate
+          speed={0.5}
+          onClick={() => {
+            setDeepLock(true);
+            setFocusOpen(true);
+          }}
+          className="today__deep-focus"
+        >
+          <Icon name="focus" size={18} />
+          Deep Focus
+        </SpecularButton>
+        <button
+          type="button"
+          className="btn today__board-btn"
+          onClick={() => setTab('board')}
+        >
+          <Icon name="board" size={16} />
+          Board
+          {(state.todos || []).filter(t => !t.done).length > 0 ? (
+            <span className="chip">{(state.todos || []).filter(t => !t.done).length}</span>
+          ) : null}
+        </button>
+      </section>
 
       <section className="section">
         <div className="card card--accent now-card">
@@ -233,6 +272,16 @@ export default function Today({ state, actions, now, engine, setTab, openSeed })
         </div>
         <GlassIcons items={quickActions} className="quick-actions" />
       </section>
+
+      <FocusTimer
+        now={now}
+        open={focusOpen}
+        deepLock={deepLock}
+        onClose={() => {
+          setFocusOpen(false);
+          setDeepLock(false);
+        }}
+      />
     </div>
   );
 }

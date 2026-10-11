@@ -78,7 +78,10 @@ const MAP = {
   warning: FiAlertTriangle,
   flag: FiFlag,
   heart: FiHeart,
-  chart: FiBarChart2
+  chart: FiBarChart2,
+  zap: FiZap,
+  board: FiEdit3,
+  focus: FiTarget
 };
 
 export default function Icon({ name, size = 20, ...rest }) {
